@@ -137,7 +137,6 @@ def get_prediction_image(org_image):
   return image
 
 def get_pretrained_model(PATH):
-  #'D:/Deep Learning Trained Models/Forms/100.pt'
   model = UNetModel()
   model.load_state_dict(torch.load(PATH))
   model = model.cuda()
@@ -156,5 +155,10 @@ def delete_files_from_folder(PATH):
       except Exception as e:
           print('Failed to delete %s. Reason: %s' % (file_path, e))
 
+def isolate_printed_text(image):
+  image = tens(image)
+  image = image != 0
+  image = image.float()
+  return image
 
 
