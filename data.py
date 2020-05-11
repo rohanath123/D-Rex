@@ -10,10 +10,10 @@ import pickle
 from helper import *
 
 def get_raw_data():
-  images = torchvision.datasets.ImageFolder("/content/drive/My Drive/Forms Dataset Created Remastered/Forms Folder", transform = transforms_set)
+  images = torchvision.datasets.ImageFolder("< PATH TO REMASTERED FORMS IMAGES SET  >", transform = transforms_set)
   images = [tens(resize(pil(images[i][0]))) for i in range(len(images))]
 
-  masks = torchvision.datasets.ImageFolder("/content/drive/My Drive/Forms Dataset Created Remastered/Masks Folder", transform = transforms.ToTensor())
+  masks = torchvision.datasets.ImageFolder("< PATH TO REMASTERED FORMS MASKS SET  >", transform = transforms.ToTensor())
   masks = [tens(resize(pil(masks[i][0]))) for i in range(len(masks))]
   masks = [threshold(mask, 0.5) for mask in masks]
 
@@ -27,17 +27,17 @@ def split_data(images, masks):
   return trainloader
 
 def pickle_data(images, masks):
-  with open("/content/drive/My Drive/Pickled Datasets/Training Dataset Full/images_pkl.txt", "wb")as p:
+  with open("< PATH TO DUMP PICKLED DATASET IMAGES >"+".txt", "wb")as p:
     pickle.dump(images, p)
 
-  with open("/content/drive/My Drive/Pickled Datasets/Training Dataset Full/masks_pkl.txt", "wb")as p:
+  with open("< PATH TO DUMP PICKLED DATASET MASKS >"+".txt", "wb")as p:
     pickle.dump(masks, p)
 
 def load_pickled_data():
-  with open("/content/drive/My Drive/Pickled Datasets/Training Dataset Full/images_pkl.txt", "rb")as p:
+  with open("< PATH TO PICKLED DATASET IMAGES >, "rb")as p:
     images = pickle.load(p)
 
-  with open("/content/drive/My Drive/Pickled Datasets/Training Dataset Full/masks_pkl.txt", "rb")as p:
+  with open("< PATH TO DUMP PICKLED DATASET MASKS >, "rb")as p:
     masks = pickle.load(p)
 
   return images, masks
