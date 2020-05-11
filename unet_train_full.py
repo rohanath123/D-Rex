@@ -1,3 +1,9 @@
+'''
+PLEASE IGNORE THIS SCRIPT IT IS MEANT FOR TESTING IN DEVELOPMENT FUNCTIONS AND WILL NOT BE PUT INTO PRODUCTION 
+
+'''
+
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
