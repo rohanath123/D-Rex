@@ -49,15 +49,10 @@ def test(images_test, masks_test, model):
   plt.show()
 
 
-'''pretrained = True
-model = UNetModel()
-if pretrained:
-  model.load_state_dict(torch.load('D:/Deep Learning Trained Models/Forms/100.pt'))
-model = model.cuda()
-
 learning_rate = 0.0001
 criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
-'''
+
+#UNCOMMENT FOLLOWING LINE TO MANUALLY TRAIN FRESH MODEL
 #train(trainloader, learning_rate, criterion, optimizer, 100)
 
