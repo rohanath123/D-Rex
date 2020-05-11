@@ -17,7 +17,7 @@ from distributed_writing import *
 pil = transforms.ToPILImage()
 tens = transforms.ToTensor()
 
-PATH = 'D:/Deep Learning Training Data/sentences/'
+PATH = 'PATH TO SENTENCES DATASET'+'/'
 image_set = []
 for filename in os.listdir(PATH):
 	image_set.append(dsets.ImageFolder(PATH+filename, transform = transforms.ToTensor()))
