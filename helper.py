@@ -17,6 +17,7 @@ import cv2
 import os, shutil
 
 from unet_architecture import *
+from ocr_test import *
 
 tens = transforms.ToTensor()
 pil = transforms.ToPILImage()
@@ -24,6 +25,8 @@ resize = transforms.Resize((512, 512))
 gray = transforms.Grayscale(3)
 
 transforms_set = transforms.Compose([transforms.Grayscale(3), transforms.Resize((512, 512)), transforms.ToTensor()])
+
+to_remove = ['-', '"', ':', '.']
 
 def threshold(img, thresh_val):
   img = img >= thresh_val
@@ -89,8 +92,6 @@ def custom_predict(model, original_image, prediction_image, threshold_image, thr
     output = threshold(output, 0.5)
   
   output = tens(custom_resize(pil(output)))
-  plt.imshow(pil(output))
-  plt.show()
 
   x, y = get_boxes(tens(original_image)[0], output[0])
   boxes = []
@@ -161,4 +162,17 @@ def isolate_printed_text(image):
   image = image.float()
   return image
 
+def get_cleaned_text(PATH, image, isolate):
+  if isolate:
+    image = isolate_printed_text(image)
+    image = pil(image)
 
+  image.save(PATH)
+
+  text = detect_document(PATH)
+  text = ''.join([c for c in text if c not in to_remove])
+
+  if ''.join(set(text)) == ' ':
+    return ' '
+  else:
+    return text
