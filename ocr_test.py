@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from helper import * 
 
 def detect_document(path):
-    """Detects document features in an image."""
     from google.cloud import vision
     import io
     client = vision.ImageAnnotatorClient()
@@ -30,8 +29,6 @@ def detect_document(path):
             'https://cloud.google.com/apis/design/errors'.format(
                 response.error.message))
     return total.lower()
-
-PATH = "C:/Users/Rohan/Desktop/Misc Images"
 
 def get_text_from_images(PATH):
     files = next(os.walk(PATH))[2]
