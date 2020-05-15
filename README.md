@@ -29,3 +29,11 @@ Sample Output Blocks:
 ![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/18.png)
 ![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/19.png)
 
+Sample Field Labels Output using OCR:
+
+![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/Capture1.PNG)
+
+Sample Info Labels Output using OCR:
+
+![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/Capture2.PNG)
+
