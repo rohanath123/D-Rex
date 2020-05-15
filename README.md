@@ -33,7 +33,7 @@ Sample Field Labels Output using OCR:
 
 ![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/Capture1.PNG)
 
-Sample Info Labels Output using OCR:
+Sample Info Output using OCR:
 
 ![Output](https://github.com/rohanath123/D-Rex/blob/master/Sample%20Output%20Images/Capture2.PNG)
 
