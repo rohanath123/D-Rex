@@ -68,11 +68,10 @@ def get_boxes(img, msk):
   img_boxes = []
   msk_boxes = []
   img_sections, msk_sections = get_white_sections(img, msk)
-  print(len(img_sections))
+  print("Number of Boxes Identified: "+str(len(img_sections))+'\n')
 
   for i in range(len(msk_sections)):
     img_box, msk_box = get_white_sections(np.transpose(img_sections[i]), np.transpose(msk_sections[i]))
-    #print(len(img_box))
     for j in range(len(img_box)):
       img_boxes.append(np.transpose(img_box[j]))
       msk_boxes.append(np.transpose(msk_box[j]))
@@ -84,9 +83,15 @@ def custom_predict(model, original_image, prediction_image, threshold_image, thr
   input = tens(gray(resize(prediction_image)))
   if threshold_image:
     input = threshold(input, 0.4)
+
+  plt.imshow(pil(input))
+  plt.show()
   
   output = model(input.cuda().view(1, 3, 512, 512))
   output = output.cpu().view(1, 512, 512)
+
+  plt.imshow(pil(output))
+  plt.show()
   
   if threshold_output:
     output = threshold(output, 0.5)
@@ -130,8 +135,27 @@ def remove_lines(image):
       cv2.drawContours(result, [c], -1, (255,255,255), 5)
   return result
 
-def get_prediction_image(org_image):
+def remove_shadow(image):
+	rgb_planes = cv2.split(image)
+
+	result_planes = []
+	result_norm_planes = []
+	for plane in rgb_planes:
+	    dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))
+	    bg_img = cv2.medianBlur(dilated_img, 21)
+	    diff_img = 255 - cv2.absdiff(plane, bg_img)
+	    norm_img = cv2.normalize(diff_img,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+	    result_planes.append(diff_img)
+	    result_norm_planes.append(norm_img)
+
+	result = cv2.merge(result_planes)
+	result_norm = cv2.merge(result_norm_planes)
+	return result_norm
+
+def get_prediction_image(org_image, shadow):	
   image = remove_lines(org_image)
+  if shadow:
+  	image = remove_shadow(org_image)
   image = enhance(image)
   image = torch.tensor(image)
   image = make_3_channels(image.view(1, image.size()[0], image.size()[1]))
@@ -158,11 +182,11 @@ def delete_files_from_folder(PATH):
 
 def isolate_printed_text(image):
   image = tens(image)
-  image = image != 0
+  image = image > 0.2
   image = image.float()
   return image
 
-def get_cleaned_text(PATH, image, isolate):
+def get_text(PATH, image, isolate):
   if isolate:
     image = isolate_printed_text(image)
     image = pil(image)
@@ -176,3 +200,11 @@ def get_cleaned_text(PATH, image, isolate):
     return ' '
   else:
     return text
+
+def clean_text(labels, info):
+  #Replacing word by word 
+  for word in labels.split(' '):
+    info = info.replace(word, '', 1)
+  info = info.strip()
+
+  return labels, info
