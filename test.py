@@ -15,10 +15,14 @@ from ocr_test import *
 
 import cv2
 
-PATH = "C:/Users/Rohan/Desktop/nsGIo.jpg"
+PATH = "D:/Deep Learning Testing Data/DRex/Original Forms/1.jpg"
+
+
+#PATH = "C:/Users/Rohan/Desktop/Testing Images/random2.PNG"
 #PATH = "D:/Deep Learning Training Data/Forms Dataset/images/images/3.jpg"
 #PATH = "C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Associated Documents/Associated Images/RESULTS AND EXAMPLES/ZOOM EXAMPLE/wRlzI.png"
-#PATH = "C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Code Attempt 2/Temp/9.png"
+#PATH = "C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Code Attempt 2/3.png"
+
 original_image = cv2.imread(PATH)
 
 print("\nPre-Processing Image for Prediction... \n")

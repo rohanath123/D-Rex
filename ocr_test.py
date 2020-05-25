@@ -3,9 +3,10 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 
-from helper import * 
+from helper import *
 
 def detect_document(path):
+    """Detects document features in an image."""
     from google.cloud import vision
     import io
     client = vision.ImageAnnotatorClient()
@@ -15,13 +16,13 @@ def detect_document(path):
     image = vision.types.Image(content=content)
 
     response = client.document_text_detection(image=image)
-    total = ' '
+    total = ''
     for page in response.full_text_annotation.pages:
         for block in page.blocks:
             for paragraph in block.paragraphs:
                 for word in paragraph.words:
                     word_text = ''.join([symbol.text for symbol in word.symbols])
-                    total = total+word_text+" "
+                    total = total+word_text+' '
 
     if response.error.message:
         raise Exception(
@@ -29,6 +30,8 @@ def detect_document(path):
             'https://cloud.google.com/apis/design/errors'.format(
                 response.error.message))
     return total.lower()
+
+PATH = "C:/Users/Rohan/Desktop/Misc Images"
 
 def get_text_from_images(PATH):
     files = next(os.walk(PATH))[2]
