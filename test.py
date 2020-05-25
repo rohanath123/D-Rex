@@ -15,34 +15,48 @@ from ocr_test import *
 
 import cv2
 
-original_image = cv2.imread("< PATH TO FORM IMAGE >")
+PATH = "C:/Users/Rohan/Desktop/nsGIo.jpg"
+#PATH = "D:/Deep Learning Training Data/Forms Dataset/images/images/3.jpg"
+#PATH = "C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Associated Documents/Associated Images/RESULTS AND EXAMPLES/ZOOM EXAMPLE/wRlzI.png"
+#PATH = "C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Code Attempt 2/Temp/9.png"
+original_image = cv2.imread(PATH)
 
-print("Pre-Processing Image for Prediction...")
-prediction_image = get_prediction_image(original_image)
+print("\nPre-Processing Image for Prediction... \n")
 
-print("Initiating Trained Model...")
-model = get_pretrained_model('< PATH TO 100.PT FILE >')
-model.eval()
+def initiate_pipeline(PATH, remove_shadow):
+	prediction_image = get_prediction_image(original_image, remove_shadow)
 
-print("Making Prediction and Segmenting Image to get Boxes...")
-boxes = custom_predict(model, pil(original_image), pil(prediction_image), False, True)
+	print("Initiating Trained Model... \n")
+	model = get_pretrained_model('D:/Deep Learning Trained Models/Forms/100.pt')
+	model.eval()
 
-print("Using OCR and writing Labels and Info...")
+	print("Making Prediction and Segmenting Image to get Boxes... \n")
+	boxes = custom_predict(model, pil(original_image), pil(prediction_image), False, True)
+
+	return boxes
+
+boxes = initiate_pipeline(PATH, False)
+if len(boxes)<3:
+	print("Activated Shadow Removal")
+	boxes = initiate_pipeline(PATH, True)
+
+
+print("Using OCR and writing Labels and Info...\n")
 for i in range(len(boxes)):
-	#CREATE A TEMPORARY FOLDER IN YOUR WORKING DIRECTORY CALLED "TEMP"
 	PATH = "./Temp/"+str(i)+".png"
-	label = get_cleaned_text(PATH, boxes[i], True)
-	info = get_cleaned_text(PATH, boxes[i], False)
-
-	info = info.replace(label, '')
+	
+	label = get_text(PATH, boxes[i], True)
+	info = get_text(PATH, boxes[i], False)
 
 	if info == ' ' or label == ' ':
 		continue
 	else:
-		with open("< PATH TO TXT FILE TO STORE LABELS >", 'a', encoding="utf-8") as f:
+		label, info = clean_text(label, info)
+
+		with open("./Labels and Content/labels.txt", 'a', encoding="utf-8") as f:
 			f.write(str(label))
 			f.write('\n')
 
-		with open("< PATH TO TXT FILE TO STORE CONTENT >", 'a', encoding="utf-8") as f:
+		with open("./Labels and Content/content.txt", 'a', encoding="utf-8") as f:
 			f.write(str(info))
 			f.write('\n')
