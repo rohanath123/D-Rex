@@ -16,13 +16,14 @@ from ocr_test import *
 import cv2
 
 modelPATH = 'D:/Deep Learning Trained Models/Forms/100.pt'
-PATH = "D:/Deep Learning Testing Data/DRex/Original Forms/1.jpg"
+imgPATH = "D:/Deep Learning Testing Data/DRex/Original Forms/1.jpg"
+
 print("Initiating Trained Model... \n")
 model = get_pretrained_model(modelPATH)
 model.eval()
 
-def single_pred_pass(imgPATH, shadow):
-	original_image = cv2.imread(imgPATH)
+def single_pred_pass(original_image, shadow):
+	print("\nPre-Processing Image for Prediction... \n")
 	prediction_image = get_prediction_image(original_image, shadow)
 
 	print("Making Prediction and Segmenting Image to get Boxes... \n")
@@ -30,17 +31,50 @@ def single_pred_pass(imgPATH, shadow):
 
 	return boxes
 
-def single_box_pass(imgPATH):
-	boxes = single_pred_pass(PATH, False)
+def single_box_pass(original_image):
+	boxes = single_pred_pass(original_image, False)
 	if len(boxes) == 0:
 		print("ACTIVATED SHADOW REMOVAL")
-		boxes = single_pass(PATH, True)
+		boxes = single_pred_pass(original_image, True)
 
 	return boxes
 
-def pipeline(imgPATH):
-	boxes = single_box_pass(imgPATH)
-	print("Using OCR and writing Labels and Info...\n")
+
+def pipeline(imgPATH, flag):
+	data = []
+
+	image = cv2.imread(imgPATH)
+	boxes = single_box_pass(image)
+
+	for i in range(len(boxes)):
+		boxes[i].save("./Temp/"+str(i)+".png")
+
+	for i in range(len(boxes)):
+		image = cv2.imread("./Temp/"+str(i)+".png")
+		temp_boxes = single_box_pass(image)
+		for box in temp_boxes:
+			data.append(box)
+
+	print(len(data))
+
+	delete_files_from_folder("./Temp")
+
+	for i in range(len(data)):
+		data[i].save("./Temp/"+str(i)+".png") 
+
+
+	'''if flag:
+					#delete_files_from_folder("C:/Users/Rohan/Desktop/College Work/BTECH FINAL PROJECT/Code Attempt 2/Temp")
+					#print("Files Deleted")'''
+	
+
+
+	
+pipeline(imgPATH, False)
+
+
+'''
+print("Using OCR and writing Labels and Info...\n")
 	for i in range(len(boxes)):
 		PATH = "./Temp/"+str(i)+".png"
 		
@@ -58,6 +92,4 @@ def pipeline(imgPATH):
 
 			with open("./Labels and Content/content.txt", 'a', encoding="utf-8") as f:
 				f.write(str(info))
-				f.write('\n')
-
-pipeline(PATH)
+				f.write('\n')'''
