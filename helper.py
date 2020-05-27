@@ -62,13 +62,22 @@ def get_white_sections(img, msk):
         single_section_img = []
         single_section_msk = []
         whites_active = False
+  if len(white_sections_img) == 0:
+        white_sections_img.append(single_section_img)
+        white_sections_msk.append(single_section_msk)
   return white_sections_img, white_sections_msk
+
+def add_extra_rows(img):
+	img = img.tolist()
+	blank = [[255] * len(img)]
+	img = blank + img + blank
+	return img
 
 def get_boxes(img, msk):
   img_boxes = []
   msk_boxes = []
   img_sections, msk_sections = get_white_sections(img, msk)
-  print("Number of Boxes Identified: "+str(len(img_sections))+'\n')
+  print("Number of Boxes Identified: "+str(len(img_sections)))
 
   for i in range(len(msk_sections)):
     img_box, msk_box = get_white_sections(np.transpose(img_sections[i]), np.transpose(msk_sections[i]))
@@ -83,16 +92,10 @@ def custom_predict(model, original_image, prediction_image, threshold_image, thr
   input = tens(gray(resize(prediction_image)))
   if threshold_image:
     input = threshold(input, 0.4)
-
-  plt.imshow(pil(input))
-  plt.show()
   
   output = model(input.cuda().view(1, 3, 512, 512))
   output = output.cpu().view(1, 512, 512)
 
-  plt.imshow(pil(output))
-  plt.show()
-  
   if threshold_output:
     output = threshold(output, 0.5)
   
@@ -100,9 +103,14 @@ def custom_predict(model, original_image, prediction_image, threshold_image, thr
 
   x, y = get_boxes(tens(original_image)[0], output[0])
   boxes = []
+
   for box in x:
-    boxes.append(pil(torch.FloatTensor([box])))
+  	try:
+  		boxes.append(pil(torch.FloatTensor([box])))
+  	except:
+  		print("Empty Block Caught")
   return boxes
+
 
 def enhance(image):
   image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -208,3 +216,21 @@ def clean_text(labels, info):
   info = info.strip()
 
   return labels, info
+
+def validate_block(image, boxes):
+	percentages = [(np.count_nonzero(tens(boxes[i])[0].numpy() == 0.0)/torch.numel(tens(boxes[i])[0])) for i in range(len(boxes))]
+	sizes = [tens(boxes[i]).size()[1] for i in range(len(boxes))]
+	valid = [i for i in range(len(boxes)) if sizes[i] >= 35 and sizes[i] <= 150 and percentages[i] >= 0.03]
+	#print(percentages)
+	#print(sizes)
+	#print(valid)
+	if len(valid) > 2:
+		return True
+	else:
+		return False
+
+'''
+if box size is close to the max box size 
+and 
+if percentage of black pixel is something 
+'''
