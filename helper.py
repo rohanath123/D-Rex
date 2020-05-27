@@ -194,9 +194,15 @@ def isolate_printed_text(image):
   image = image.float()
   return image
 
+def isolate_printed_text2(image):
+	image = tens(image)
+	image = image != 0
+	image = image.float()
+	return image
+
 def get_text(PATH, image, isolate):
   if isolate:
-    image = isolate_printed_text(image)
+    image = isolate_printed_text2(image)
     image = pil(image)
 
   image.save(PATH)
@@ -221,16 +227,7 @@ def validate_block(image, boxes):
 	percentages = [(np.count_nonzero(tens(boxes[i])[0].numpy() == 0.0)/torch.numel(tens(boxes[i])[0])) for i in range(len(boxes))]
 	sizes = [tens(boxes[i]).size()[1] for i in range(len(boxes))]
 	valid = [i for i in range(len(boxes)) if sizes[i] >= 35 and sizes[i] <= 150 and percentages[i] >= 0.03]
-	#print(percentages)
-	#print(sizes)
-	#print(valid)
 	if len(valid) > 2:
 		return True
 	else:
 		return False
-
-'''
-if box size is close to the max box size 
-and 
-if percentage of black pixel is something 
-'''
