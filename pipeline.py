@@ -16,7 +16,7 @@ from ocr_test import *
 import cv2
 
 modelPATH = 'D:/Deep Learning Trained Models/Forms/100.pt'
-imgPATH = "D:/Deep Learning Testing Data/DRex/Original Forms/1.jpg"
+imgPATH = "D:/Deep Learning Testing Data/DRex/Original Forms/5.jpg"
 #imgPATH = "D:/Deep Learning Testing Data/DRex/Testing Images/SG9AL.jpg"
 
 print("==============================================================")
@@ -72,26 +72,74 @@ def pipeline(imgPATH, flag):
 
 	for i in range(len(data)):
 		data[i].save("./Condition/"+str(i)+".png")
+
 	print("\nLength of Entire Sequence: "+str(len(data)))
 
+
 	print("Using OCR and writing Labels and Info...\n")
+	labels = []
+	infos = []
+	images = []
 	for i in range(len(data)):
 		PATH = "./Condition/"+str(i)+".png"
+		image = cv2.imread(PATH)
+		images.append(image)
 		
-		label = get_text(PATH, data[i], True)
-		info = get_text(PATH, data[i], False)
+		label = get_raw_text(PATH, image, True)
+		info = get_raw_text(PATH, image, False)
 
-		if info == ' ' or label == ' ':
-			continue
-		else:
-			label, info = clean_text(label, info)
+		labels.append(label)
+		infos.append(info)
 
-			with open("./Labels and Content/labels.txt", 'a', encoding="utf-8") as f:
+	labels, infos = process_text(labels, infos, images)
+
+	return labels, infos
+
+
+
+labels, infos = pipeline(imgPATH, False)
+for i in range(len(labels)):
+		print(labels[i]+': '+infos[i])
+
+'''images = []
+for i in range(25):
+	images.append(cv2.imread("./Condition/"+str(i)+".png"))
+
+percs = {i:resultant_percentage(images[i]) for i in range(len(images))}
+print(percs)
+
+classes = {i:classify_block(images[i]) for i in range(len(images))}
+print(classes)
+
+
+with open("./Labels and Content/labels.txt", 'a', encoding="utf-8") as f:
 				f.write(str(label))
 				f.write('\n')
 
 			with open("./Labels and Content/content.txt", 'a', encoding="utf-8") as f:
 				f.write(str(info))
 				f.write('\n')
+
+
+
+print("Using OCR and writing Labels and Info...\n")
+labels = []
+infos = []
+images = []
+for i in range(22):
+	PATH = "./Condition/"+str(i)+".png"
+	image = cv2.imread(PATH)
+	images.append(image)
 	
-pipeline(imgPATH, False)
+	label = get_raw_text(PATH, image, True)
+	info = get_raw_text(PATH, image, False)
+
+	labels.append(label)
+	infos.append(info)
+
+labels, infos = process_text(labels, infos, images)
+
+for i in range(len(labels)):
+	print(labels[i]+': '+infos[i])
+
+'''

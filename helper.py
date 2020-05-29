@@ -26,7 +26,7 @@ gray = transforms.Grayscale(3)
 
 transforms_set = transforms.Compose([transforms.Grayscale(3), transforms.Resize((512, 512)), transforms.ToTensor()])
 
-to_remove = ['-', '"', ':', '.']
+to_remove = ['-', '"', ':', '.', '(', ')', '--', '—']
 
 def threshold(img, thresh_val):
   img = img >= thresh_val
@@ -188,9 +188,21 @@ def delete_files_from_folder(PATH):
       except Exception as e:
           print('Failed to delete %s. Reason: %s' % (file_path, e))
 
-def isolate_printed_text(image):
+'''def isolate_printed_text(image):
   image = tens(image)
   image = image > 0.2
+  image = image.float()
+  return image'''
+
+def isolate_printed_text_recognition(image):
+  image = image > 35
+  image = tens(image.astype(np.float))
+  image = image.float()
+  return image
+
+def isolate_printed_text(image):
+  image = image >= (image.min() + 35)
+  image = tens(image.astype(np.float))
   image = image.float()
   return image
 
@@ -215,13 +227,42 @@ def get_text(PATH, image, isolate):
   else:
     return text
 
-def clean_text(labels, info):
-  #Replacing word by word 
-  for word in labels.split(' '):
-    info = info.replace(word, '', 1)
-  info = info.strip()
+def get_raw_text(PATH, image, isolate):
+  if isolate:
+    image = isolate_printed_text_recognition(image)
+    
+  image = pil(image)
+  image.save(PATH)
 
-  return labels, info
+  text = detect_document(PATH)
+
+  return text
+
+def clean_text(labels, infos):
+  new_labels = []
+  new_infos = []
+  for label in labels:
+    new_labels.append(''.join([c for c in label if c not in to_remove]))
+  for info in infos:
+    new_infos.append(''.join([c for c in info if c not in to_remove]))
+  return new_labels, new_infos
+
+def remove_words(labels, infos):
+  flag = False
+  while True:
+    for i in range(len(labels)):
+      if not all(item in infos[i].split(' ') for item in labels[i].split(' ')):
+        break
+      if i == len(labels)-1:
+        flag = True
+    if flag:
+      break
+    labels.pop(i)
+  for i in range(len(labels)):
+    for word in labels[i].split(' '):
+      infos[i] = infos[i].replace(word, '', 1)
+    infos[i] = infos[i].strip()
+  return labels, infos
 
 def validate_block(image, boxes):
 	percentages = [(np.count_nonzero(tens(boxes[i])[0].numpy() == 0.0)/torch.numel(tens(boxes[i])[0])) for i in range(len(boxes))]
@@ -231,3 +272,98 @@ def validate_block(image, boxes):
 		return True
 	else:
 		return False
+
+def resultant_percentage(image):
+	image = isolate_printed_text(remove_lines(image))
+	perc = (np.count_nonzero(image[0] == 0.0)/torch.numel(image[0]))
+	return perc
+
+def classify_block(image):
+	perc = resultant_percentage(image)
+	if perc < 0.0047:
+		return "Handwriting"
+	elif perc > 0.07:
+		return "Label"
+	else:
+		return "Mixed"
+
+def string_classes(content, classes, class1, class2, res_class):
+	new_content = []
+	new_classes = []
+	i = 0
+	while True:
+		if i == len(content):
+			break
+		try:
+			if classes[i] == class1 and classes[i+1] == class2:
+				new_content.append(content[i]+' '+content[i+1])
+				new_classes.append(res_class)
+				classes[i+1] = 'Skip'
+		except:
+			print('')
+		if classes[i] == 'Skip':
+			i = i+1
+			continue
+		else:
+			new_content.append(content[i])
+			new_classes.append(classes[i])
+		
+		i = i+1
+
+	return new_content, new_classes
+
+def string_content(content, classes):
+	print("Initial Length: "+str(len(content)))
+
+	org_content = content
+
+	for i in range(len(content)):
+		if content[i] == '' or content[i] == ' ':
+			if classes[i-1] != 'Handwriting' and classes[i+1] != 'Handwriting':
+				content[i] = 'Not Mentioned'
+				classes[i] = 'Handwriting'
+		try:
+			#CHECK 
+			if classes[i] == 'Label' and classes[i+1] == 'Mixed' and classes[i-1] != 'Label':
+				content[i] = content[i]+' Not Mentioned/Unrecognizable'
+				classes[i] = 'Mixed'
+		except:
+			continue
+	
+	empty = [i for i in range(len(content)) if content[i] == '' or content[i] == ' ']
+	content = [content[i] for i in range(len(content)) if i not in empty]
+	classes = [classes[i] for i in range(len(classes)) if i not in empty]
+
+	content, classes = string_classes(content, classes, "Handwriting", "Handwriting", "Handwriting")
+	content, classes = string_classes(content, classes, "Label", "Label", "Label")
+	content, classes = string_classes(content, classes, "Label", "Handwriting", "Mixed")
+
+	content = [content[i] for i in range(len(content)) if classes[i]=='Mixed' and content[i].strip().lower() != 'none']
+
+	all_string = ''
+	for c in content:
+		all_string = all_string+' '+c 
+
+	removables = ''
+
+	for i in range(len(org_content)):
+		if org_content[i] not in all_string:
+			removables = removables+' '+org_content[i]
+
+	print("Final Length: "+str(len(content))+'\n')
+
+	return content, classes, removables
+
+def clean_labels(labels, removables):
+	labels = [labels[i] for i in range(len(labels)) if labels[i] not in removables]
+	return labels
+
+def process_text(labels, infos, images):
+	classes = [classify_block(images[i]) for i in range(len(images))]
+	infos, classes, removables = string_content(infos, classes)
+
+	labels, infos = clean_text(labels, infos)
+	labels = [label for label in labels if label != '' and label != ' ']
+	labels, infos = remove_words(labels, infos)
+
+	return labels, infos
