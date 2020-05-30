@@ -7,6 +7,8 @@ from torchvision import transforms
 import numpy as np 
 from PIL import Image
 
+from hc import *
+
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -16,19 +18,15 @@ from ocr_test import *
 import cv2
 
 modelPATH = 'D:/Deep Learning Trained Models/Forms/100.pt'
+#imgPATH = "D:/Deep Learning Testing Data/DRex/New Forms/4.jpg"
 imgPATH = "D:/Deep Learning Testing Data/DRex/Original Forms/5.jpg"
-#imgPATH = "D:/Deep Learning Testing Data/DRex/Testing Images/SG9AL.jpg"
 
-print("==============================================================")
-print("Initiating Trained Model...")
 model = get_pretrained_model(modelPATH)
 model.eval()
 
 def single_pred_pass(original_image, shadow):
-	print("\nPre-Processing Image for Prediction...")
 	prediction_image = get_prediction_image(original_image, shadow)
 
-	print("Making Prediction and Segmenting Image to get Boxes...")
 	boxes = custom_predict(model, pil(original_image), pil(prediction_image), False, True)
 
 	return boxes
@@ -36,11 +34,10 @@ def single_pred_pass(original_image, shadow):
 def single_box_pass(original_image, first_pass):
 	boxes = single_pred_pass(original_image, False)
 	if len(boxes) == 1 and first_pass:
-		print("ACTIVATED SHADOW REMOVAL")
 		boxes = single_pred_pass(original_image, True)
 
 	return boxes
-
+'''
 
 def pipeline(imgPATH, flag):
 	delete_files_from_folder("./Temp")
@@ -62,9 +59,7 @@ def pipeline(imgPATH, flag):
 		temp_boxes = custom_predict(model, pil(image), pil(image), True, True)
 
 		if validate_block(image, temp_boxes):
-			print("Segmenting again...")
 			temp = custom_predict(model, pil(org_img), pil(org_img), True, True)
-			print("New Number of Boxes for "+str(i)+": "+str(len(temp)))
 			for box in temp:
 				data.append(box)
 		else:
@@ -73,73 +68,69 @@ def pipeline(imgPATH, flag):
 	for i in range(len(data)):
 		data[i].save("./Condition/"+str(i)+".png")
 
-	print("\nLength of Entire Sequence: "+str(len(data)))
-
-
-	print("Using OCR and writing Labels and Info...\n")
-	labels = []
+	#labels = []
 	infos = []
 	images = []
+	labels = hc()
+
 	for i in range(len(data)):
 		PATH = "./Condition/"+str(i)+".png"
 		image = cv2.imread(PATH)
 		images.append(image)
 		
-		label = get_raw_text(PATH, image, True)
+		#label = get_raw_text(PATH, image, True)
 		info = get_raw_text(PATH, image, False)
 
-		labels.append(label)
+		#labels.append(label)
 		infos.append(info)
 
 	labels, infos = process_text(labels, infos, images)
 
 	return labels, infos
+'''
 
 
+def pipeline(imgPATH, flag):
+	delete_files_from_folder("./Temp")
+	delete_files_from_folder("./Condition")
+	delete_files_from_folder("./Labels and Content")
 
-labels, infos = pipeline(imgPATH, False)
-for i in range(len(labels)):
-		print(labels[i]+': '+infos[i])
-
-'''images = []
-for i in range(25):
-	images.append(cv2.imread("./Condition/"+str(i)+".png"))
-
-percs = {i:resultant_percentage(images[i]) for i in range(len(images))}
-print(percs)
-
-classes = {i:classify_block(images[i]) for i in range(len(images))}
-print(classes)
-
-
-with open("./Labels and Content/labels.txt", 'a', encoding="utf-8") as f:
-				f.write(str(label))
-				f.write('\n')
-
-			with open("./Labels and Content/content.txt", 'a', encoding="utf-8") as f:
-				f.write(str(info))
-				f.write('\n')
-
-
-
-print("Using OCR and writing Labels and Info...\n")
-labels = []
-infos = []
-images = []
-for i in range(22):
-	PATH = "./Condition/"+str(i)+".png"
-	image = cv2.imread(PATH)
-	images.append(image)
 	
-	label = get_raw_text(PATH, image, True)
-	info = get_raw_text(PATH, image, False)
 
-	labels.append(label)
-	infos.append(info)
+	image = cv2.imread(imgPATH)
+	boxes = single_box_pass(image, True)
 
-labels, infos = process_text(labels, infos, images)
+	data = resegment(boxes, model)
+	#data = resegment(boxes, model)
+
+	for i in range(len(data)):
+		data[i].save("./Condition/"+str(i)+".png")
+
+	#labels = []
+	infos = []
+	images = []
+	labels = hc()
+
+	for i in range(len(data)):
+		PATH = "./Condition/"+str(i)+".png"
+		image = cv2.imread(PATH)
+		images.append(image)
+		
+		#label = get_raw_text(PATH, image, True)
+		info = get_raw_text(PATH, image, False)
+
+		#labels.append(label)
+		infos.append(info)
+
+	print(infos)
+	infos = process_text(labels, infos, images)
+	labels, infos = clean_text_data(labels, infos)
+
+	return labels, infos
+
+
+#USE THIS TO CALL PIPELINE WHERE IMGPATH IS PATH TO INPUT FORM
+labels, infos = pipeline(imgPATH, False)
 
 for i in range(len(labels)):
 	print(labels[i]+': '+infos[i])
-
-'''

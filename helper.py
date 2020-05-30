@@ -77,7 +77,6 @@ def get_boxes(img, msk):
   img_boxes = []
   msk_boxes = []
   img_sections, msk_sections = get_white_sections(img, msk)
-  print("Number of Boxes Identified: "+str(len(img_sections)))
 
   for i in range(len(msk_sections)):
     img_box, msk_box = get_white_sections(np.transpose(img_sections[i]), np.transpose(msk_sections[i]))
@@ -117,6 +116,12 @@ def enhance(image):
   image = cv2.GaussianBlur(image, (5, 5), 0.35)
   ret3,th3 = cv2.threshold(image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
   return th3
+
+def enhance_image(image):
+  image = image > 175
+  image = tens(image.astype(np.float))
+  image = image.float()
+  return image
 
 def make_3_channels(image):
   temp = torch.cat([image, image])
@@ -188,14 +193,8 @@ def delete_files_from_folder(PATH):
       except Exception as e:
           print('Failed to delete %s. Reason: %s' % (file_path, e))
 
-'''def isolate_printed_text(image):
-  image = tens(image)
-  image = image > 0.2
-  image = image.float()
-  return image'''
-
 def isolate_printed_text_recognition(image):
-  image = image > 35
+  image = image > 100
   image = tens(image.astype(np.float))
   image = image.float()
   return image
@@ -230,7 +229,7 @@ def get_text(PATH, image, isolate):
 def get_raw_text(PATH, image, isolate):
   if isolate:
     image = isolate_printed_text_recognition(image)
-    
+  #image = enhance_image(image)  
   image = pil(image)
   image.save(PATH)
 
@@ -313,15 +312,14 @@ def string_classes(content, classes, class1, class2, res_class):
 	return new_content, new_classes
 
 def string_content(content, classes):
-	print("Initial Length: "+str(len(content)))
-
 	org_content = content
 
 	for i in range(len(content)):
 		if content[i] == '' or content[i] == ' ':
 			if classes[i-1] != 'Handwriting' and classes[i+1] != 'Handwriting':
-				content[i] = 'Not Mentioned'
+				content[i] = ' '
 				classes[i] = 'Handwriting'
+		'''
 		try:
 			#CHECK 
 			if classes[i] == 'Label' and classes[i+1] == 'Mixed' and classes[i-1] != 'Label':
@@ -329,6 +327,7 @@ def string_content(content, classes):
 				classes[i] = 'Mixed'
 		except:
 			continue
+		'''
 	
 	empty = [i for i in range(len(content)) if content[i] == '' or content[i] == ' ']
 	content = [content[i] for i in range(len(content)) if i not in empty]
@@ -350,8 +349,6 @@ def string_content(content, classes):
 		if org_content[i] not in all_string:
 			removables = removables+' '+org_content[i]
 
-	print("Final Length: "+str(len(content))+'\n')
-
 	return content, classes, removables
 
 def clean_labels(labels, removables):
@@ -364,6 +361,100 @@ def process_text(labels, infos, images):
 
 	labels, infos = clean_text(labels, infos)
 	labels = [label for label in labels if label != '' and label != ' ']
-	labels, infos = remove_words(labels, infos)
 
-	return labels, infos
+	#print(infos)
+		
+	#labels, infos = remove_words(labels, infos)
+
+	return infos
+
+def resegment(boxes, model):
+	data = []
+	for i in range(len(boxes)):
+		boxes[i].save("./Temp/"+str(i)+".png")
+
+	for i in range(len(boxes)):
+		org_img = cv2.imread("./Temp/"+str(i)+".png")
+
+		image = isolate_printed_text(org_img)
+		temp_boxes = custom_predict(model, pil(image), pil(image), True, True)
+
+		if validate_block(image, temp_boxes):
+			temp = custom_predict(model, pil(org_img), pil(org_img), True, True)
+			for box in temp:
+				data.append(box)
+		else:
+			data.append(pil(org_img))
+
+	for i in range(len(data)):
+		data[i].save("./Temp/"+str(i)+".png")
+
+	return data
+
+def clean_words(labels, info): 
+  for word in labels.split(' '):
+    info = info.replace(word, '', 1)
+  info = info.strip()
+  return labels, info
+
+
+def clean_text_data(labels, infos):
+  all_string = ''
+  for i in range(len(infos)):
+    all_string = all_string+' '+infos[i]
+
+  all_string = list(all_string)
+  all_string = [s if s not in to_remove else ' ' for s in all_string]
+  all_string = ''.join(c for c in all_string)
+
+  stop = []
+  for label in labels:
+    stop.append(label.strip().split(' ')[0])
+  stop_labels = stop
+  stop_dict = {}
+  for i in range(len(stop)):
+    try:
+      stop_dict[all_string.split().index(stop[i])] = stop[i] 
+    except:
+      continue
+  stop_dict = sorted(stop_dict)
+
+  new = []
+  for i in range(len(stop_dict)-1):
+    start = stop_dict[i]
+    end = stop_dict[i+1]
+    temp = ''
+    for s in all_string.split()[start:end]:
+      temp = temp+' '+s
+    new.append(temp.strip())
+  
+  stop_infos = []
+  for s in new:
+    stop_infos.append(s.strip().split(' ')[0])
+
+  for i in range(len(stop_labels)):
+    if stop_labels[i].strip() not in stop_infos:
+      new.append(labels[i].strip()+' <Resegmentation Required>')
+      stop_infos.append(stop_labels[i])
+
+  info_dict = {stop_infos[i]:i for i in range(len(stop_infos))}
+
+  info_new = []
+  for i in range(len(stop_labels)):
+    try:
+      info_new.append(new[info_dict[stop_labels[i]]])
+    except:
+      continue
+
+  for i in range(len(info_new)):
+    labels[i], info_new[i] = clean_words(labels[i], info_new[i])
+  return labels[4:len(labels)], info_new[4:len(info_new)]
+
+def xyz():
+	images = []
+	for i in range(1, 5):
+		#PATH = "D:/Deep Learning Testing Data/DRex/New Forms/"+str(i)+".jpg"
+		PATH = './Temp/'+str(i)+'.png'
+		image = cv2.imread(PATH)
+		plt.imshow(pil(enhance_image(image)))
+		plt.show()
