@@ -124,9 +124,9 @@ def pipeline(imgPATH, flag):
 
 	print(infos)
 	infos = process_text(labels, infos, images)
-	labels, infos = clean_text_data(labels, infos)
+	labelss, infoss = clean_text_data(labels, infos)
 
-	return labels, infos
+	return labelss, infoss
 
 
 #USE THIS TO CALL PIPELINE WHERE IMGPATH IS PATH TO INPUT FORM

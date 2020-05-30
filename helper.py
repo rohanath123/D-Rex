@@ -286,6 +286,15 @@ def classify_block(image):
 	else:
 		return "Mixed"
 
+def classify_block2(image):
+  perc = resultant_percentage(image)
+  if perc > 0.05:
+    return "Label"
+  elif perc > 0.005 and perc < 0.05:
+    return "Mixed"
+  else:
+    return "Handwriting"
+
 def string_classes(content, classes, class1, class2, res_class):
 	new_content = []
 	new_classes = []
@@ -355,12 +364,12 @@ def clean_labels(labels, removables):
 	labels = [labels[i] for i in range(len(labels)) if labels[i] not in removables]
 	return labels
 
-def process_text(labels, infos, images):
+def process_text(labels, infoss, images):
 	classes = [classify_block(images[i]) for i in range(len(images))]
-	infos, classes, removables = string_content(infos, classes)
+	infos, classes, removables = string_content(infoss, classes)
 
-	labels, infos = clean_text(labels, infos)
-	labels = [label for label in labels if label != '' and label != ' ']
+	#labels, infos = clean_text(labels, infos)
+	#labels = [label for label in labels if label != '' and label != ' ']
 
 	#print(infos)
 		
@@ -453,7 +462,6 @@ def clean_text_data(labels, infos):
 def xyz():
 	images = []
 	for i in range(1, 5):
-		#PATH = "D:/Deep Learning Testing Data/DRex/New Forms/"+str(i)+".jpg"
 		PATH = './Temp/'+str(i)+'.png'
 		image = cv2.imread(PATH)
 		plt.imshow(pil(enhance_image(image)))
